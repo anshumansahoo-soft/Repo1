@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="../node_modules/bootstrap-icons/font/bootstrap-icons.css"
+    />
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+      }
+      form {
+        font-size: 15px;
+        font-family: Arial;
+        border: 1px solid gray;
+        padding: 20px;
+        width: 400px;
+        background-color: #e0ffff;
+        box-shadow: 2px 2px 2px gray;
+        border-radius: 5px;
+      }
+
+      .bi-person-circle {
+        font-size: 30px;
+        font-weight: bold;
+        text-align: center;
+        font-weight: 800;
+        margin-bottom: 20px;
+        display: block;
+      }
+      .form-container {
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+      .form-label {
+        margin-bottom: 5px;
+        display: block;
+        font-weight: bold;
+        padding: 5px;
+        /* font-size: 15px; */
+      }
+      input {
+        padding: 5px;
+        border-radius: 8px;
+      }
+      .form-control {
+        width: 80%;
+        font-size: 15px;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      textarea {
+        /* width: 410px; */
+        border-radius: 5px;
+      }
+
+      .submit-container {
+        padding: 10px 20px;
+        margin-top: 5px;
+        font-size: 16px;
+        width: 100%;
+        border-radius: 10px;
+        border: none;
+        background-color: #008b8b;
+        color: white;
+        cursor: pointer;
+      }
+      .submit-container:hover {
+        background-color: rgb(22, 188, 64);
+        cursor: grab;
+      }
+      #username + div {
+        display: none;
+      }
+      #username:focus + div {
+        display: block;
+        font-size: 12px;
+        color: red;
+      }
+      #username:focus {
+        outline: none;
+        border: 1px solid red;
+      }
+      /* #password + div {
+        display: none;
+      }
+      #password:focus + div {
+        display: block;
+        font-size: 12px;
+        color: red;
+      } */
+      /* #password:focus {
+        outline: none;
+        border: 1px solid red;
+      }
+      input[type="tel"]:read-only {
+        cursor: not-allowed;
+      } */
+      /* input:read-only {
+        cursor: not-allowed;
+      } */
+      .text + label {
+        color: red;
+      }
+      .text:checked + label {
+        color: #008b8b;
+      }
+      .text ~ button {
+        display: none;
+      }
+      .text:checked ~ button {
+        display: block;
+      }
+      input:optional + span {
+        display: none;
+      }
+      input:required + span {
+        display: inline;
+        color: red;
+      }
+      #password:required ~ div {
+        display: block;
+        color: red;
+        font-size: 14px;
+      }
+      #password:valid ~ div {
+        display: none;
+      }
+      #password:valid + span {
+        display: none;
+      }
+      #mobile:valid ~ div {
+        display: none;
+      }
+      #mobile:invalid ~ div {
+        display: block;
+        color: red;
+        font-size: 14px;
+      }
+      #age:in-range + div {
+        display: none;
+      }
+      #age:out-of-range + div {
+        display: block;
+        color: red;
+        font-size: 14px;
+      }
+      #email:valid ~ div {
+        display: none;
+      }
+      #email:invalid ~ div {
+        display: block;
+        color: red;
+        font-size: 14px;
+      }
+      #email:valid + span {
+        display: none;
+      }
+    </style>
+    <title>Form</title>
+  </head>
+  <body>
+    <form action="">
+      <div class="headrer-top">
+        <span class="bi bi-person-circle"> Student Registration</span>
+      </div>
+      <div class="form-conatiner">
+        <label for="UserName" class="form-label">User Name:</label>
+        <div>
+          <input
+            type="text"
+            name="UserName"
+            id="username"
+            autofocus
+            placeholder="Must be one UpperCase"
+            class="form-control"
+            pattern="[A-Z]\w{2,10}"
+          />
+          <div>Must be one UpperCase</div>
+        </div>
+      </div>
+      <div class="form-conatiner">
+        <label for="password" class="form-label">Password:</label>
+        <div>
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="password"
+            class="form-control"
+            required
+            pattern="\w{2,10}"
+          />
+          <span>*</span>
+          <div>Must contain 8 to 16 character</div>
+        </div>
+      </div>
+      <div class="form-conatiner">
+        <label for="Mobile Number" class="form-label">Mobile Number:</label>
+        <div>
+          <input
+            type="tel"
+            name="Mobile Number"
+            id="mobile"
+            value="+919052867855"
+            class="form-control"
+            pattern="\+91\d{10}"
+          />
+          <div>+91 must required</div>
+        </div>
+      </div>
+      <div class="form-conatiner">
+        <label for="Emailid" class="form-label">Email id:</label>
+        <div>
+          <input
+            type="email"
+            name="Emailid"
+            id="email"
+            class="form-control"
+            required
+            pattern="[a-z0-9]{1,}(\.[a-z0-9]{1,})*@gmail.com"
+          />
+          <span>*</span>
+          <div>email must required</div>
+        </div>
+      </div>
+      <div class="form-conatiner">
+        <label for="location" class="form-label">Enter Location:</label>
+        <div>
+          <select name="city" id="course" class="form-control">
+            <option>Select City</option>
+            <option>Hyderabad</option>
+            <option>Mimbai</option>
+            <option>Chennai</option>
+            <option>Delhi</option>
+          </select>
+        </div>
+        <div class="form-conatiner">
+          <label for="course" class="form-label">Course:</label>
+          <div>
+            <select name="course" id="course" class="form-control">
+              <option>Select Course</option>
+              <option>Fullstack UI</option>
+              <option>React With UI</option>
+              <option>Java</option>
+              <option>Python</option>
+              <option>Django</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-container">
+          <label for="Gender" class="form-label">Gender:</label>
+          <div>
+            <input type="radio" name="Gender" checked /><label>Male</label>
+
+            <input type="radio" name="Gender" /><label>Female</label>
+          </div>
+        </div>
+        <div class="form-conatiner">
+          <label for="Age" class="form-label">Age:</label>
+          <div>
+            <input type="number" name="Age" id="age" min="5" max="25" />
+            <div>Enter 5 to 25 only</div>
+          </div>
+        </div>
+        <div class="form-container">
+          <label for="Department" class="form-label">Department:</label>
+          <div>
+            <input type="checkbox" name="derparment" value="CSE" checked />
+            <label for="derparment">CSE</label>
+            <input type="checkbox" name="derparment" value="IT" />
+            <label for="derparment">IT</label>
+            <input type="checkbox" name="derparment" value="CIVIL" />
+            <label for="derparment">CIVIL</label>
+            <input type="checkbox" name="derparment" value="MECH" />
+            <label for="derparment">MECH</label>
+          </div>
+        </div>
+        <div class="form-container">
+          <label for="photo" class="form-label">Student Photo:</label>
+          <div>
+            <input
+              type="file"
+              id="file"
+              name="photo"
+              accept=".jpg,.png"
+              multiple
+            />
+          </div>
+        </div>
+        <div class="form-container">
+          <label for="address" class="form-label">Address:</label>
+          <div>
+            <textarea class="form-control" disabled rows="4" cols="35">
+Lorem ipsum dolor sit amet consectetur adipisicing elit. Quasi nostrum sed atque vel ipsam recusandae numquam. Vel eaque laborum inventore numquam! Quasi asperiores consequuntur nam quis earum? Similique, ad sapiente! Lorem ipsum dolor, sit amet consectetur adipisicing elit. Corrupti obcaecati labore perspiciatis consequatur accusantium. Necessitatibus consequatur, dolor delectus fuga assumenda nisi! Labore ratione, officiis mollitia corporis dolorem cum ullam dolore?</textarea
+            >
+          </div>
+          <div>
+            <input type="checkbox" name="checkbox" id="" class="text" /><label
+              for=""
+              >I Accept</label
+            >
+            <br />
+
+            <button type="submit" class="submit-container">Register</button>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </form>
+  </body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Match the Following</title>
+<style>
+  body{margin:0;font-family:Inter,Arial;background:#0f1724;color:#e6eef8}
+  .wrap{max-width:880px;margin:40px auto;padding:24px;background:rgba(255,255,255,0.04);border-radius:12px}
+  h1{margin:0 0 14px;font-size:20px}
+  button{cursor:pointer;border:0;padding:8px 12px;border-radius:8px;font-weight:600}
+  #showAnswers{background:#60a5fa;color:#fff}
+  #reset{background:transparent;color:#9fb0c8;border:1px solid #333}
+  .board{display:flex;gap:20px;position:relative;min-height:260px}
+  .col{flex:1;display:flex;flex-direction:column;gap:12px}
+  .item{
+    padding:12px;border:1px solid rgba(255,255,255,0.06);
+    background:rgba(255,255,255,0.03);
+    border-radius:10px;cursor:pointer;transition:.15s;
+  }
+  .item:hover{transform:translateY(-4px)}
+  .selected{outline:2px solid rgba(96,165,250,0.4)}
+  .correct{background:rgba(22,163,74,0.12);border-color:#16a34a}
+  .wrong{background:rgba(239,68,68,0.12);border-color:#ef4444}
+  svg{position:absolute;inset:0;pointer-events:none}
+  .line{
+    stroke-width:3;fill:none;stroke:#60a5fa;
+    stroke-dasharray:200;stroke-dashoffset:200;
+    transition:stroke-dashoffset .6s ease;
+  }
+  .ok{stroke:#16a34a}
+  .bad{stroke:#ef4444}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <h1>Match the Following</h1>
+    <div>
+      <button id="showAnswers">Show Answers</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="board" id="board">
+    <div class="col" id="leftCol"></div>
+    <svg id="svg"></svg>
+    <div class="col" id="rightCol"></div>
+  </div>
+</div>
+
+<script>
+const left = [
+  {id:"L1", text:"Sheep", match:"R3"},
+  {id:"L2", text:"Insects", match:"R1"},
+  {id:"L3", text:"Leather", match:"R2"}
+];
+const right = [
+  {id:"R1", text:"Six legs"},
+  {id:"R2", text:"Shoes"},
+  {id:"R3", text:"Wool"}
+];
+
+const leftCol = document.getElementById("leftCol");
+const rightCol = document.getElementById("rightCol");
+const svg = document.getElementById("svg");
+const board = document.getElementById("board");
+
+let selected = null, links = [], elems = {};
+
+function init(){
+  leftCol.innerHTML = "";
+  rightCol.innerHTML = "";
+  svg.innerHTML = "";
+
+  left.forEach(i=>{
+    let el = createItem(i.text,i.id,()=>selectLeft(i.id));
+    leftCol.appendChild(el); elems[i.id]=el;
+  });
+
+  right.forEach(i=>{
+    let el = createItem(i.text,i.id,()=>selectRight(i.id));
+    rightCol.appendChild(el); elems[i.id]=el;
+  });
+}
+
+function createItem(text,id,clickFn){
+  let el = document.createElement("div");
+  el.className="item"; el.textContent=text; el.dataset.id=id;
+  el.onclick=clickFn; return el;
+}
+
+function selectLeft(id){
+  if(links.some(l=>l.L===id)) return;
+  resetSelection();
+  selected=id; elems[id].classList.add("selected");
+}
+
+function selectRight(rid){
+  if(!selected) return;
+  if(links.some(l=>l.R===rid)) return flash(elems[rid]);
+
+  const correct = left.find(x=>x.id===selected).match;
+  const path = drawLine(elems[selected], elems[rid]);
+
+  let obj={L:selected,R:rid,path};
+  links.push(obj);
+
+  if(rid===correct){
+    markCorrect(selected,rid,path);
+  } else {
+    markWrong(selected,rid,path,obj);
+  }
+  resetSelection();
+}
+
+function resetSelection(){
+  Object.values(elems).forEach(e=>e.classList.remove("selected"));
+}
+
+function flash(el){
+  el.classList.add("wrong");
+  setTimeout(()=>el.classList.remove("wrong"),400);
+}
+
+function drawLine(a,b){
+  let A=a.getBoundingClientRect(), B=b.getBoundingClientRect(), C=board.getBoundingClientRect();
+  let ax=A.right-C.left, ay=A.top+A.height/2-C.top;
+  let bx=B.left-C.left, by=B.top+B.height/2-C.top;
+
+  let p=`M${ax},${ay} C ${ax+60},${ay} ${bx-60},${by} ${bx},${by}`;
+  let path=document.createElementNS("http://www.w3.org/2000/svg","path");
+  path.setAttribute("d",p); path.setAttribute("class","line");
+  svg.appendChild(path);
+  requestAnimationFrame(()=>path.style.strokeDashoffset=0);
+  return path;
+}
+
+function markCorrect(L,R,path){
+  elems[L].classList.add("correct");
+  elems[R].classList.add("correct");
+  path.classList.add("ok");
+}
+
+function markWrong(L,R,path,obj){
+  elems[L].classList.add("wrong");
+  elems[R].classList.add("wrong");
+  path.classList.add("bad");
+  setTimeout(()=>{
+    path.remove();
+    elems[L].classList.remove("wrong");
+    elems[R].classList.remove("wrong");
+    links = links.filter(l=>l!==obj);
+  },700);
+}
+
+document.getElementById("reset").onclick=()=>{
+  links=[]; init();
+};
+
+document.getElementById("showAnswers").onclick=()=>{
+  document.getElementById("reset").click();
+  setTimeout(()=>{
+    left.forEach(i=>{
+      let p=drawLine(elems[i.id], elems[i.match]);
+      p.classList.add("ok");
+      elems[i.id].classList.add("correct");
+      elems[i.match].classList.add("correct");
+      links.push({L:i.id,R:i.match,path:p});
+    });
+  },20);
+};
+
+init();
+</script>
+</body>
+</html>

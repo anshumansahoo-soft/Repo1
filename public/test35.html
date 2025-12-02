@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Match the Following — Animated</title>
+<style>
+  :root{
+    --bg:#0f1724;
+    --card:#0b1220;
+    --text:#e6eef8;
+    --muted:#9fb0c8;
+    --accent:#60a5fa;
+    --ok:#16a34a;
+    --bad:#ef4444;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#071026 0%, #0f1724 100%);font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;color:var(--text)}
+  .wrap{max-width:900px;margin:40px auto;padding:24px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+  h1{margin:0 0 14px;font-size:20px;letter-spacing:0.4px}
+  .board{display:flex;gap:24px;align-items:stretch;position:relative;min-height:260px}
+  .col{flex:1;padding:12px;display:flex;flex-direction:column;gap:12px}
+  .item{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:10px;padding:12px 14px;
+    display:flex;align-items:center;gap:10px;color:var(--text);
+    cursor:pointer;user-select:none;border:1px solid rgba(255,255,255,0.04);
+    transition:transform .12s ease, box-shadow .12s ease, border-color .12s;
+  }
+  .item:hover{transform:translateY(-4px);box-shadow:0 6px 18px rgba(6,12,32,0.6)}
+  .item.small{font-size:15px}
+  .item.selected{outline:3px solid rgba(96,165,250,0.12);box-shadow:0 8px 30px rgba(96,165,250,0.06)}
+  .item.correct{background:linear-gradient(90deg, rgba(22,163,74,0.12), rgba(22,163,74,0.06));border-color:rgba(22,163,74,0.4)}
+  .item.wrong{animation:shake .25s linear; background:linear-gradient(90deg, rgba(239,68,68,0.08), rgba(239,68,68,0.04));border-color:rgba(239,68,68,0.4)}
+  @keyframes shake{0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-4px)}100%{transform:translateX(0)}}
+  .legend{display:flex;gap:8px;align-items:center;margin-top:10px;color:var(--muted);font-size:14px}
+  .controls{display:flex;gap:8px;align-items:center; margin-left:auto}
+  button{background:var(--accent);border:0;color:white;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600;box-shadow:0 6px 18px rgba(96,165,250,0.12)}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);box-shadow:none}
+  /* SVG overlay container */
+  .svg-layer{position:absolute;inset:0;pointer-events:none}
+  /* stroke animation: draw effect */
+  .draw-line{stroke-width:3;fill:none;stroke-linecap:round;stroke:var(--accent);stroke-dasharray:1000;stroke-dashoffset:1000;transition:stroke-dashoffset .6s ease}
+  .draw-line.revealed{stroke-dashoffset:0}
+  .draw-line.ok{stroke:var(--ok)}
+  .draw-line.bad{stroke:var(--bad)}
+  .footer{margin-top:14px;color:var(--muted);font-size:13px}
+  @media(max-width:640px){
+    .board{flex-direction:column}
+    .controls{margin-top:10px;margin-left:0}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <h1>Match the Following (click left → then right)</h1>
+      <div class="controls" style="margin-left:auto">
+        <button id="showAnswers">Show answers</button>
+        <button id="reset" class="secondary">Reset</button>
+      </div>
+    </div>
+
+    <div class="board" id="board">
+
+      <div class="col" id="leftCol">
+        <!-- left items inserted by JS -->
+      </div>
+
+      <div class="svg-layer">
+        <svg id="svg" width="100%" height="100%"></svg>
+      </div>
+
+      <div class="col" id="rightCol">
+        <!-- right items inserted by JS -->
+      </div>
+    </div>
+
+    <div class="legend">
+      <div>Tip: click an item on the left, then its match on the right.</div>
+    </div>
+
+    <div class="footer">Correct answers: <strong>Sheep → Wool, Insects → Six legs, Leather → Shoes</strong></div>
+  </div>
+
+<script>
+(function(){
+  // Data: left labels and right labels (shuffled)
+  const left = [
+    {id:'L1', text:'Sheep', match:'R3'},
+    {id:'L2', text:'Insects', match:'R1'},
+    {id:'L3', text:'Leather', match:'R2'}
+  ];
+  const right = [
+    {id:'R1', text:'Six legs'},
+    {id:'R2', text:'Shoes'},
+    {id:'R3', text:'Wool'}
+  ];
+
+  // DOM refs
+  const leftCol = document.getElementById('leftCol');
+  const rightCol = document.getElementById('rightCol');
+  const svg = document.getElementById('svg');
+  const board = document.getElementById('board');
+  const resetBtn = document.getElementById('reset');
+  const showBtn = document.getElementById('showAnswers');
+
+  // State
+  let selectedLeft = null;
+  let connections = []; // {Lid, Rid, pathElement}
+  const idToElem = {};
+
+  // render items
+  function render(){
+    leftCol.innerHTML = '';
+    rightCol.innerHTML = '';
+
+    left.forEach(node=>{
+      const el = document.createElement('div');
+      el.className = 'item small';
+      el.textContent = node.text;
+      el.dataset.id = node.id;
+      el.addEventListener('click', ()=>onLeftClick(node.id));
+      leftCol.appendChild(el);
+      idToElem[node.id] = el;
+    });
+
+    // shuffle right for challenge (but keep original order stable here)
+    const shuffled = right.slice(); // you can randomize if you like
+    shuffled.forEach(node=>{
+      const el = document.createElement('div');
+      el.className = 'item small';
+      el.textContent = node.text;
+      el.dataset.id = node.id;
+      el.addEventListener('click', ()=>onRightClick(node.id));
+      rightCol.appendChild(el);
+      idToElem[node.id] = el;
+    });
+
+    // set SVG size to board
+    resizeSvg();
+  }
+
+  function onLeftClick(id){
+    // If left already matched, ignore
+    if(connections.find(c=>c.Lid===id)) return;
+    clearSelection();
+    selectedLeft = id;
+    idToElem[id].classList.add('selected');
+  }
+
+  function onRightClick(rid){
+    if(!selectedLeft) return;
+    // prevent re-matching same right side
+    if(connections.find(c=>c.Rid===rid)) {
+      flashWrong(idToElem[rid]); // already used
+      selectedLeft = null;
+      clearSelection();
+      return;
+    }
+    const leftNode = left.find(x=>x.id===selectedLeft);
+    const correctRid = leftNode.match;
+    // draw a line
+    const path = makeLineBetweenElements(idToElem[selectedLeft], idToElem[rid]);
+    const connection = {Lid:selectedLeft, Rid:rid, pathElement: path};
+    connections.push(connection);
+
+    if(rid === correctRid){
+      // correct
+      idToElem[selectedLeft].classList.add('correct');
+      idToElem[rid].classList.add('correct');
+      path.classList.add('ok');
+    } else {
+      // wrong
+      idToElem[selectedLeft].classList.add('wrong');
+      idToElem[rid].classList.add('wrong');
+      path.classList.add('bad');
+      // remove wrong after a small delay so user can see
+      setTimeout(()=>{
+        // remove the wrong visual and the connection
+        try{ path.remove(); }catch(e){}
+        idToElem[selectedLeft].classList.remove('wrong');
+        idToElem[rid].classList.remove('wrong');
+        connections = connections.filter(c => c.pathElement !== path);
+      }, 700);
+    }
+
+    // finalize animation
+    requestAnimationFrame(()=> path.classList.add('revealed') );
+
+    selectedLeft = null;
+    clearSelection();
+  }
+
+  function clearSelection(){
+    Object.values(idToElem).forEach(el=>el.classList.remove('selected'));
+  }
+
+  function flashWrong(el){
+    el.classList.add('wrong');
+    setTimeout(()=>el.classList.remove('wrong'), 500);
+  }
+
+  // create an SVG path (smooth curve) between centers of two DOM elements
+  function makeLineBetweenElements(aEl, bEl){
+    const aRect = aEl.getBoundingClientRect();
+    const bRect = bEl.getBoundingClientRect();
+    const boardRect = board.getBoundingClientRect();
+
+    // compute centers relative to board
+    const ax = aRect.right - boardRect.left; // right side of left column
+    const ay = aRect.top + aRect.height/2 - boardRect.top;
+    const bx = bRect.left - boardRect.left;  // left side of right column
+    const by = bRect.top + bRect.height/2 - boardRect.top;
+
+    // create path with cubic Bezier for smooth curve
+    const dx = Math.abs(bx - ax);
+    const cx1 = ax + Math.min(100, dx * 0.4);
+    const cx2 = bx - Math.min(100, dx * 0.4);
+    const d = `M ${ax} ${ay} C ${cx1} ${ay} ${cx2} ${by} ${bx} ${by}`;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', d);
+    path.setAttribute('class','draw-line');
+    path.setAttribute('stroke-linecap','round');
+    path.setAttribute('stroke-width','3');
+    svg.appendChild(path);
+
+    return path;
+  }
+
+  // resize svg viewport to match board
+  function resizeSvg(){
+    const r = board.getBoundingClientRect();
+    svg.setAttribute('width', r.width);
+    svg.setAttribute('height', r.height);
+    svg.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
+    // re-draw existing connections so they stay accurate
+    const old = connections.slice();
+    // remove old paths
+    old.forEach(c=>{
+      if(c.pathElement) c.pathElement.remove();
+    });
+    connections = [];
+    // re-create from saved pairs using small delay (so layout settled)
+    setTimeout(()=>{
+      old.forEach(c=>{
+        // re-create the visual: using the same classes to preserve state
+        const path = makeLineBetweenElements(idToElem[c.Lid], idToElem[c.Rid]);
+        // restore class (ok or bad) if the left element is marked correct
+        if(idToElem[c.Lid].classList.contains('correct')) path.classList.add('ok');
+        if(idToElem[c.Lid].classList.contains('wrong')) path.classList.add('bad');
+        connections.push({Lid:c.Lid, Rid:c.Rid, pathElement: path});
+        requestAnimationFrame(()=> path.classList.add('revealed') );
+      });
+    }, 40);
+  }
+
+  // Reset board
+  function resetAll(){
+    // remove SVG paths
+    svg.innerHTML = '';
+    connections = [];
+    selectedLeft = null;
+    Object.values(idToElem).forEach(el=>{
+      el.classList.remove('correct','wrong','selected');
+    });
+  }
+
+  // show answers (animate correct matches)
+  function showAnswers(){
+    resetAll();
+    // connect each left to its correct right
+    left.forEach(l=>{
+      const path = makeLineBetweenElements(idToElem[l.id], idToElem[l.match]);
+      idToElem[l.id].classList.add('correct');
+      idToElem[l.match].classList.add('correct');
+      connections.push({Lid:l.id, Rid:l.match, pathElement:path});
+      requestAnimationFrame(()=> path.classList.add('revealed') );
+      // color OK
+      path.classList.add('ok');
+    });
+  }
+
+  // events
+  window.addEventListener('resize', ()=> resizeSvg());
+  resetBtn.addEventListener('click', resetAll);
+  showBtn.addEventListener('click', showAnswers);
+
+  // initial render
+  render();
+
+})();
+</script>
+</body>
+</html>
